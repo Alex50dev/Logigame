@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LogiGame — Formation Préparateur de commandes</title>
+<style>
+  /* ── VARIABLES ── */
+  :root{
+    --bg:#0F1923;--surface:#162230;--card:#1C2E40;--border:#243A50;
+    --accent:#00C2FF;--accent2:#FF6B35;--green:#00D68F;--red:#FF4757;
+    --yellow:#FFD166;--text:#E8F4FD;--muted:#6B8FA8;--radius:14px;
+    /* Touch targets minimum 48px */
+    --touch:48px;
+  }
+
+  /* ── RESET ── */
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html{font-size:16px;}
+  body{
+    background:var(--bg);color:var(--text);
+    font-family:'Segoe UI',system-ui,sans-serif;
+    min-height:100vh;
+    /* Prevent text zoom on iOS when rotating */
+    -webkit-text-size-adjust:100%;
+  }
+
+  /* ── HEADER ── */
+  header{
+    background:linear-gradient(135deg,#0A1520,#162230 60%,#1a2d1a);
+    border-bottom:1px solid var(--border);
+    padding:14px 16px;
+    display:flex;align-items:center;gap:12px;
+    position:sticky;top:0;z-index:100;
+  }
+  .logo-icon{
+    font-size:1.8rem;flex-shrink:0;
+    background:linear-gradient(135deg,var(--accent),var(--green));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .header-text{flex:1;min-width:0;}
+  header h1{font-size:1.3rem;font-weight:800;letter-spacing:-.5px;white-space:nowrap;}
+  header h1 span{color:var(--accent);}
+  header p{font-size:.72rem;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .score-global{
+    flex-shrink:0;
+    background:var(--card);border:1px solid var(--border);
+    border-radius:10px;padding:6px 12px;text-align:center;min-width:72px;
+  }
+  .score-global .val{font-size:1.2rem;font-weight:800;color:var(--accent);}
+  .score-global .lbl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+
+  /* ── MENU ── */
+  #menu{max-width:920px;margin:0 auto;padding:20px 14px 32px;}
+  .menu-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .menu-title{font-size:.82rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);}
+  .shuffle-btn{
+    background:var(--card);border:1px solid var(--border);color:var(--text);
+    border-radius:8px;padding:0 16px;height:var(--touch);font-size:.82rem;
+    cursor:pointer;transition:border-color .15s;white-space:nowrap;
+  }
+  .shuffle-btn:active{border-color:var(--accent);background:rgba(0,194,255,.08);}
+  /* Mobile : 1 colonne, desktop : grille */
+  .game-grid{display:grid;grid-template-columns:1fr;gap:12px;}
+  .game-card{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:18px 16px;cursor:pointer;
+    transition:border-color .15s,box-shadow .15s;
+    position:relative;overflow:hidden;
+    /* Active state for mobile */
+    -webkit-user-select:none;user-select:none;
+  }
+  .game-card:active{border-color:var(--accent);box-shadow:0 4px 20px rgba(0,194,255,.15);}
+  .game-card .tag{
+    font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+    padding:3px 9px;border-radius:20px;display:inline-block;margin-bottom:10px;
+  }
+  .tag-quiz  {background:rgba(0,194,255,.15);color:var(--accent);}
+  .tag-action{background:rgba(255,107,53,.15);color:var(--accent2);}
+  .tag-memory{background:rgba(0,214,143,.15);color:var(--green);}
+  .tag-tri   {background:rgba(255,209,102,.18);color:var(--yellow);}
+  .tag-ordre {background:rgba(142,68,173,.2);color:#C39BD3;}
+  .game-card .card-body{display:flex;gap:14px;align-items:flex-start;}
+  .game-card .emoji{font-size:2rem;flex-shrink:0;line-height:1.2;}
+  .game-card .card-text{flex:1;}
+  .game-card h3{font-size:.98rem;font-weight:700;margin-bottom:4px;}
+  .game-card p{font-size:.8rem;color:var(--muted);line-height:1.5;}
+  .game-card .stars{margin-top:8px;font-size:.76rem;color:var(--yellow);}
+  .game-card .best-score{
+    position:absolute;top:10px;right:10px;
+    font-size:.66rem;color:var(--muted);
+    background:var(--surface);border-radius:5px;padding:2px 7px;
+  }
+
+  /* ── GAME AREA ── */
+  #game-area{display:none;max-width:760px;margin:0 auto;padding:14px 14px 40px;}
+  .back-btn{
+    background:none;border:1px solid var(--border);color:var(--muted);
+    font-size:.85rem;padding:0 16px;height:var(--touch);
+    border-radius:8px;cursor:pointer;margin-bottom:16px;
+    display:inline-flex;align-items:center;
+    transition:color .15s,border-color .15s;
+  }
+  .back-btn:active{color:var(--text);border-color:var(--accent);}
+
+  /* HUD */
+  .game-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:8px;}
+  .game-header h2{font-size:1.1rem;font-weight:800;flex:1;min-width:0;}
+  .hud{display:flex;gap:7px;flex-shrink:0;}
+  .hud-box{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:8px;padding:4px 10px;text-align:center;min-width:52px;
+  }
+  .hud-box .v{font-size:.95rem;font-weight:800;}
+  .hud-box .l{font-size:.58rem;color:var(--muted);text-transform:uppercase;}
+  .hud-box.accent .v{color:var(--accent);}
+  .hud-box.green .v{color:var(--green);}
+  .hud-box.red .v{color:var(--red);}
+  .hud-box.yellow .v{color:var(--yellow);}
+
+  /* PROGRESS */
+  .progress-bar{height:5px;background:var(--border);border-radius:3px;margin-bottom:16px;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:3px;transition:width .4s;}
+
+  /* QUIZ / CHRONO */
+  .quiz-q{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px;}
+  .quiz-q .num{font-size:.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:6px;}
+  .quiz-q .text{font-size:.98rem;font-weight:600;line-height:1.55;}
+  /* 1 colonne par défaut sur mobile */
+  .quiz-opts{display:grid;grid-template-columns:1fr;gap:9px;margin-bottom:12px;}
+  .quiz-opt{
+    background:var(--surface);border:2px solid var(--border);border-radius:11px;
+    padding:0 14px;min-height:var(--touch);
+    cursor:pointer;font-size:.9rem;text-align:left;line-height:1.4;
+    display:flex;align-items:center;
+    transition:border-color .15s,background .15s;
+  }
+  .quiz-opt:active{border-color:var(--accent);background:rgba(0,194,255,.07);}
+  .quiz-opt.correct{border-color:var(--green);background:rgba(0,214,143,.1);}
+  .quiz-opt.wrong{border-color:var(--red);background:rgba(255,71,87,.1);}
+  .quiz-opt.disabled{pointer-events:none;}
+
+  /* FEEDBACK */
+  .quiz-feedback{
+    padding:12px 14px;border-radius:10px;font-size:.88rem;font-weight:500;
+    margin-bottom:12px;display:none;line-height:1.5;
+  }
+  .quiz-feedback.ok{background:rgba(0,214,143,.12);color:var(--green);border:1px solid rgba(0,214,143,.3);}
+  .quiz-feedback.err{background:rgba(255,71,87,.12);color:var(--red);border:1px solid rgba(255,71,87,.3);}
+
+  /* BUTTONS */
+  .btn-next{
+    background:var(--accent);color:#0F1923;border:none;border-radius:10px;
+    padding:0 24px;height:var(--touch);
+    font-weight:700;font-size:.92rem;cursor:pointer;display:none;
+    width:100%;
+  }
+  .btn-next:active{filter:brightness(1.1);}
+  .btn-replay{
+    background:var(--accent);color:#0F1923;border:none;border-radius:10px;
+    padding:0 22px;height:var(--touch);
+    font-weight:700;cursor:pointer;font-size:.9rem;flex:1;
+  }
+  .btn-menu-r{
+    background:none;border:1px solid var(--border);color:var(--text);
+    border-radius:10px;padding:0 22px;height:var(--touch);
+    font-weight:600;cursor:pointer;font-size:.9rem;flex:1;
+  }
+
+  /* RESULT */
+  .result-screen{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px 20px;text-align:center;}
+  .result-screen .medal{font-size:2.8rem;margin-bottom:10px;}
+  .result-screen h3{font-size:1.3rem;font-weight:800;margin-bottom:6px;}
+  .result-screen .pts{font-size:1.8rem;font-weight:800;color:var(--accent);margin:10px 0;}
+  .result-screen p{color:var(--muted);margin-bottom:18px;font-size:.88rem;line-height:1.5;}
+  .result-btns{display:flex;gap:10px;justify-content:center;}
+
+  /* TRI DES RETOURS */
+  /* Zones empilées en colonne sur mobile */
+  .tri-zone-wrapper{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:14px;}
+  .tri-zone{
+    background:var(--card);border:2px dashed var(--border);
+    border-radius:var(--radius);padding:12px;min-height:80px;
+    transition:border-color .2s,background .2s;
+  }
+  .tri-zone-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .tri-zone .zone-icon{font-size:1.3rem;}
+  .tri-zone h4{font-size:.88rem;font-weight:700;}
+  .tri-zone.zone-stock h4{color:var(--green);}
+  .tri-zone.zone-sav h4{color:var(--yellow);}
+  .tri-zone.zone-rebut h4{color:var(--red);}
+  .tri-items-pool{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+  .tri-item{
+    background:var(--surface);border:2px solid var(--border);border-radius:10px;
+    padding:0 14px;min-height:var(--touch);
+    cursor:pointer;font-size:.88rem;user-select:none;
+    display:flex;align-items:center;
+    transition:border-color .15s,background .15s;
+  }
+  .tri-item:active{border-color:var(--accent);}
+  .tri-item.tri-selected{
+    border-color:var(--yellow);background:rgba(255,209,102,.15);
+    box-shadow:0 0 12px rgba(255,209,102,.25);
+  }
+  .tri-zone.tri-zone-active{cursor:pointer;border-style:solid;border-color:var(--muted);}
+  .tri-zone.tri-zone-active:active{border-color:var(--accent);background:rgba(0,194,255,.05);}
+  .dropped-item{
+    background:var(--surface);border-radius:7px;
+    padding:8px 10px;font-size:.82rem;margin:4px 0;
+    border:1px solid var(--border);
+  }
+  .dropped-item.ok{border-color:var(--green);color:var(--green);}
+  .dropped-item.err{border-color:var(--red);color:var(--red);}
+
+  /* TROUVE L'ERREUR — cards au lieu de tableau sur mobile */
+  .error-cards{display:flex;flex-direction:column;gap:9px;margin-bottom:14px;}
+  .error-card{
+    background:var(--card);border:2px solid var(--border);
+    border-radius:11px;padding:14px;cursor:pointer;
+    transition:border-color .15s,background .15s;
+  }
+  .error-card:active{border-color:var(--accent);background:rgba(0,194,255,.04);}
+  .error-card.selected-ok{border-color:var(--green);background:rgba(0,214,143,.08);}
+  .error-card.selected-err{border-color:var(--red);background:rgba(255,71,87,.08);}
+  .error-card .ec-ref{font-size:.7rem;color:var(--accent);font-weight:700;margin-bottom:3px;}
+  .error-card .ec-name{font-size:.92rem;font-weight:600;margin-bottom:6px;}
+  .error-card .ec-qty{display:flex;gap:14px;font-size:.82rem;color:var(--muted);}
+  .error-card .ec-qty span strong{color:var(--text);}
+
+  /* MEMORY — 2 colonnes sur mobile */
+  .memory-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+  .mem-card{
+    background:var(--card);border:2px solid var(--border);border-radius:11px;
+    min-height:80px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:.78rem;text-align:center;padding:8px;
+    transition:border-color .15s,background .15s;
+    user-select:none;
+  }
+  .mem-card .front{display:none;flex-direction:column;align-items:center;gap:4px;line-height:1.3;}
+  .mem-card .back{display:flex;align-items:center;justify-content:center;font-size:1.4rem;}
+  .mem-card.flipped .front{display:flex;}
+  .mem-card.flipped .back{display:none;}
+  .mem-card.flipped{border-color:var(--accent);background:rgba(0,194,255,.05);}
+  .mem-card.matched{border-color:var(--green);background:rgba(0,214,143,.08);pointer-events:none;}
+  .mem-card:active:not(.matched):not(.flipped){border-color:var(--muted);}
+
+  /* DRIVE */
+  .drive-order{
+    background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);
+    padding:14px;display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;
+  }
+  .drive-order .car{font-size:1.8rem;flex-shrink:0;}
+  .drive-order .order-desc strong{display:block;font-size:.95rem;margin-bottom:3px;}
+  .drive-order .order-desc span{color:var(--muted);font-size:.83rem;line-height:1.4;}
+  .drive-btns{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+  .drive-btn{
+    background:var(--surface);border:2px solid var(--border);border-radius:10px;
+    padding:0 14px;min-height:var(--touch);
+    cursor:pointer;font-size:.88rem;text-align:left;
+    display:flex;align-items:center;
+    transition:border-color .15s,background .15s;
+  }
+  .drive-btn:active{border-color:var(--accent);}
+  .drive-btn.correct{border-color:var(--green);background:rgba(0,214,143,.1);color:var(--green);font-weight:700;pointer-events:none;}
+  .drive-btn.wrong{border-color:var(--red);background:rgba(255,71,87,.1);color:var(--red);pointer-events:none;}
+  .timer-bar{height:6px;background:var(--border);border-radius:3px;margin-bottom:12px;}
+  .timer-fill{height:100%;border-radius:3px;transition:width .1s linear;}
+
+  /* PALETTE */
+  .palette-pool{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+  .palette-item{
+    background:var(--surface);border:2px solid var(--border);border-radius:10px;
+    padding:0 14px;min-height:var(--touch);
+    cursor:pointer;font-size:.88rem;display:flex;align-items:center;gap:10px;
+    transition:border-color .15s,background .15s;
+  }
+  .palette-item:active{border-color:var(--accent);}
+  .palette-item.pal-selected{border-color:var(--yellow);background:rgba(255,209,102,.12);}
+  .palette-item.pal-placed{opacity:.3;pointer-events:none;}
+  .palette-slots{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+  .palette-slot{
+    background:var(--card);border:2px dashed var(--border);border-radius:10px;
+    padding:0 14px;min-height:var(--touch);font-size:.88rem;
+    display:flex;align-items:center;gap:10px;
+    transition:border-color .2s,background .2s;cursor:pointer;
+  }
+  .palette-slot:active{border-color:var(--accent);background:rgba(0,194,255,.04);}
+  .palette-slot.filled-ok{border-color:var(--green);border-style:solid;background:rgba(0,214,143,.07);}
+  .palette-slot.filled-err{border-color:var(--red);border-style:solid;background:rgba(255,71,87,.07);}
+  .palette-slot .slot-num{font-size:.72rem;font-weight:700;color:var(--muted);min-width:60px;flex-shrink:0;}
+  .slot-placeholder{color:var(--muted);font-size:.82rem;font-style:italic;}
+
+  /* VRAI/FAUX */
+  .chrono-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px;}
+  .chrono-choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .chrono-choice{
+    background:var(--surface);border:2px solid var(--border);border-radius:11px;
+    padding:0 10px;min-height:56px;
+    cursor:pointer;font-size:.92rem;font-weight:700;text-align:center;
+    display:flex;align-items:center;justify-content:center;
+    transition:border-color .15s,background .15s;
+  }
+  .chrono-choice:active{border-color:var(--accent);}
+  .chrono-choice.correct{border-color:var(--green);background:rgba(0,214,143,.1);}
+  .chrono-choice.wrong{border-color:var(--red);background:rgba(255,71,87,.1);}
+  .chrono-choice.disabled{pointer-events:none;}
+
+  /* PENDU */
+  .pendu-word{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:16px 0;}
+  .pendu-letter{
+    width:32px;height:40px;border-bottom:2px solid var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.1rem;font-weight:700;text-transform:uppercase;
+  }
+  .pendu-alpha{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:14px;}
+  .pendu-btn{
+    background:var(--surface);border:1.5px solid var(--border);border-radius:8px;
+    width:42px;height:42px;cursor:pointer;
+    font-size:.88rem;font-weight:700;text-transform:uppercase;
+    display:flex;align-items:center;justify-content:center;
+    transition:border-color .15s,background .15s;
+  }
+  .pendu-btn:active{border-color:var(--accent);}
+  .pendu-btn.used-ok{border-color:var(--green);background:rgba(0,214,143,.1);color:var(--green);pointer-events:none;}
+  .pendu-btn.used-err{border-color:var(--red);background:rgba(255,71,87,.1);color:var(--red);pointer-events:none;}
+
+  /* BONNE DECISION */
+  .rapid-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+  .rapid-scenario{font-size:.95rem;font-weight:600;line-height:1.55;margin-bottom:14px;}
+  .rapid-choices{display:flex;flex-direction:column;gap:9px;}
+  .rapid-choice{
+    background:var(--surface);border:2px solid var(--border);border-radius:10px;
+    padding:0 14px;min-height:var(--touch);
+    cursor:pointer;font-size:.88rem;line-height:1.4;
+    display:flex;align-items:center;
+    transition:border-color .15s,background .15s;
+  }
+  .rapid-choice:active{border-color:var(--accent);}
+  .rapid-choice.correct{border-color:var(--green);background:rgba(0,214,143,.1);}
+  .rapid-choice.wrong{border-color:var(--red);background:rgba(255,71,87,.1);}
+  .rapid-choice.disabled{pointer-events:none;}
+
+  /* ── DESKTOP (≥ 600px) ── */
+  @media(min-width:600px){
+    header{padding:18px 24px;}
+    header h1{font-size:1.6rem;}
+    #menu{padding:28px 20px 40px;}
+    #game-area{padding:20px 20px 40px;}
+    .game-grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));}
+    .game-card .card-body{flex-direction:column;}
+    .quiz-opts{grid-template-columns:1fr 1fr;}
+    .chrono-choices{grid-template-columns:1fr 1fr;}
+    .tri-zone-wrapper{grid-template-columns:1fr 1fr 1fr;}
+    .memory-grid{grid-template-columns:repeat(4,1fr) !important;}
+    .drive-btns{flex-direction:row;flex-wrap:wrap;}
+    .drive-btn{flex:1;min-width:45%;}
+    .mem-card{min-height:90px;}
+    .btn-next{width:auto;}
+  }
+  @media(min-width:600px){
+    .game-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 8px 28px rgba(0,194,255,.12);}
+    .back-btn:hover{color:var(--text);border-color:var(--accent);}
+    .quiz-opt:hover{border-color:var(--accent);background:rgba(0,194,255,.05);}
+    .drive-btn:hover{border-color:var(--accent);background:rgba(0,194,255,.07);}
+    .tri-zone.tri-zone-active:hover{border-color:var(--accent);background:rgba(0,194,255,.05);}
+    .palette-slot:hover{border-color:var(--accent);background:rgba(0,194,255,.04);}
+    .error-card:hover{border-color:var(--accent);background:rgba(0,194,255,.04);}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-icon">📦</div>
+  <div class="header-text">
+    <h1>Logi<span>Game</span></h1>
+    <p>Formation — Préparateur de commandes</p>
+  </div>
+  <div class="score-global">
+    <div class="val" id="total-score">0</div>
+    <div class="lbl">Points</div>
+  </div>
+</header>
+
+<div id="menu">
+  <div class="menu-header">
+    <p class="menu-title">Choisis ton mini-jeu</p>
+    <button class="shuffle-btn" onclick="shuffleMenu()">🔀 Mélanger</button>
+  </div>
+  <div class="game-grid" id="game-grid"></div>
+</div>
+
+<div id="game-area">
+  <button class="back-btn" onclick="backToMenu()">← Retour au menu</button>
+  <div id="game-content"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// CATALOGUE DES JEUX
+// ══════════════════════════════════════════════════
+const ALL_GAMES = [
+  { id:'quiz',    emoji:'🧠', tag:'tag-quiz',   tagLabel:'Quiz',      title:'Quiz Chrono',         desc:'10 questions sur le picking, WMS, CACES… Réponds avant la fin du temps !',              stars:'★★★☆☆ Difficulté moyenne' },
+  { id:'tri',     emoji:'📦', tag:'tag-tri',    tagLabel:'Tri',       title:'Trie les retours',    desc:'Sélectionne chaque produit puis place-le dans la bonne zone : stock, SAV ou rebut.',   stars:'★★☆☆☆ Facile' },
+  { id:'error',   emoji:'🔍', tag:'tag-action', tagLabel:'Détection', title:'Trouve l\'erreur',    desc:'Une commande est prête à partir. Repère l\'article incorrect avant l\'expédition.',    stars:'★★★★☆ Difficile' },
+  { id:'memory',  emoji:'🃏', tag:'tag-memory', tagLabel:'Mémoire',   title:'Memory CACES',        desc:'Retrouve les paires : engin de manutention ↔ catégorie CACES correspondante.',         stars:'★★☆☆☆ Mémorisation' },
+  { id:'drive',   emoji:'🚗', tag:'tag-action', tagLabel:'Rapidité',  title:'Le Drive en folie',   desc:'Les clients arrivent ! Identifie la bonne référence avant que le chrono expire.',       stars:'★★★★☆ Stress-test' },
+  { id:'palette', emoji:'🏗️', tag:'tag-ordre',  tagLabel:'Ordre',     title:'Monte la palette',    desc:'Remets les couches de la palette dans le bon ordre : lourd en bas, léger en haut !',   stars:'★★★☆☆ Logique' },
+  { id:'chrono',  emoji:'⚡', tag:'tag-quiz',   tagLabel:'Chrono',    title:'Vrai ou Faux Chrono', desc:'10 affirmations sur la logistique. Vrai ou Faux en 5 secondes chrono !',                stars:'★★★☆☆ Rapidité' },
+  { id:'pendu',   emoji:'🔤', tag:'tag-memory', tagLabel:'Vocabulaire',title:'Le Mot du Dépôt',    desc:'Devine le terme logistique lettre par lettre avant d\'épuiser tes essais.',             stars:'★★★☆☆ Vocabulaire' },
+  { id:'rapid',   emoji:'⚠️', tag:'tag-action', tagLabel:'Réflexes',  title:'Bonne décision !',    desc:'Un incident se produit dans l\'entrepôt. Quelle est la bonne réaction immédiate ?',     stars:'★★★★☆ Gestion' },
+];
+
+let totalScore = 0;
+let bestScores = {};
+ALL_GAMES.forEach(g => bestScores[g.id] = 0);
+let currentGame = null;
+let displayedGames = [];
+
+function shuffle(arr) {
+  for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
+  return arr;
+}
+
+function shuffleMenu() {
+  displayedGames = shuffle([...ALL_GAMES]).slice(0, 6);
+  renderMenu();
+}
+
+function renderMenu() {
+  const grid = document.getElementById('game-grid');
+  grid.innerHTML = displayedGames.map(g => `
+    <div class="game-card" onclick="startGame('${g.id}')">
+      <span class="tag ${g.tag}">${g.tagLabel}</span>
+      <span class="best-score" id="best-${g.id}">${bestScores[g.id] > 0 ? '🏆 '+bestScores[g.id] : '—'}</span>
+      <div class="card-body">
+        <span class="emoji">${g.emoji}</span>
+        <div class="card-text">
+          <h3>${g.title}</h3>
+          <p>${g.desc}</p>
+          <div class="stars">${g.stars}</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function addScore(n) {
+  totalScore += n;
+  document.getElementById('total-score').textContent = totalScore;
+}
+
+function showBestScore(game, score) {
+  if(score > bestScores[game]) {
+    bestScores[game] = score;
+    const el = document.getElementById('best-'+game);
+    if(el) el.textContent = '🏆 '+score;
+  }
+}
+
+function startGame(name) {
+  currentGame = name;
+  document.getElementById('menu').style.display = 'none';
+  const ga = document.getElementById('game-area');
+  ga.style.display = 'block';
+  window.scrollTo(0,0);
+  const gc = document.getElementById('game-content');
+  gc.innerHTML = '';
+  const fns = {quiz:initQuiz,tri:initTri,error:initError,memory:initMemory,drive:initDrive,palette:initPalette,chrono:initChrono,pendu:initPendu,rapid:initRapid};
+  if(fns[name]) fns[name](gc);
+}
+
+function backToMenu() {
+  document.getElementById('menu').style.display = 'block';
+  document.getElementById('game-area').style.display = 'none';
+  currentGame = null;
+}
+
+function showResult(container, score, max, title, detail) {
+  const pct = Math.round((score/max)*100);
+  const medal = pct>=80?'🥇':pct>=50?'🥈':'🥉';
+  const msg = pct>=80?'Excellent !':pct>=50?'Pas mal !':'Continue de t\'entraîner !';
+  showBestScore(currentGame, score);
+  addScore(score);
+  container.innerHTML = `
+    <div class="result-screen">
+      <div class="medal">${medal}</div>
+      <h3>${title}</h3>
+      <div class="pts">${score} / ${max} pts</div>
+      <p>${msg} ${detail}</p>
+      <div class="result-btns">
+        <button class="btn-replay" onclick="startGame('${currentGame}')">🔄 Rejouer</button>
+        <button class="btn-menu-r" onclick="backToMenu()">Menu</button>
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════
+// GAME 1 — QUIZ CHRONO
+// ══════════════════════════════════════════════════
+const QUIZ_BANK = [
+  {q:"Que signifie WMS ?",opts:["Warehouse Management System","Worker Mobility Service","Warehouse Mobility Scanner","Work Management Software"],ans:0,exp:"WMS = Warehouse Management System : logiciel de gestion d'entrepôt."},
+  {q:"Limite légale de port de charge à la main pour un homme ?",opts:["15 kg","25 kg","55 kg","75 kg"],ans:1,exp:"La recommandation INRS est 25 kg max. Au-delà, une aide mécanique est obligatoire."},
+  {q:"La méthode ABC en entrepôt, c'est quoi ?",opts:["Un système de pointage","Un classement des produits par rotation","Une norme de sécurité","Un type de convoyeur"],ans:1,exp:"A = forte rotation (près de la sortie), B = moyenne, C = faible."},
+  {q:"Le CACES R489 concerne quels engins ?",opts:["Transpalettes manuels","Chariots automoteurs","Nacelles élévatrices","Grues mobiles"],ans:1,exp:"R489 = chariots automoteurs (élévateurs, rétractables, latéraux…)."},
+  {q:"À quoi sert un bon de livraison (BL) ?",opts:["Calculer le salaire","Tracer les marchandises expédiées","Noter les congés","Commander des fournitures"],ans:1,exp:"Le BL trace les marchandises sorties : quantité, référence, destinataire."},
+  {q:"Que faire si un article est introuvable à son emplacement ?",opts:["Prendre un article similaire","Compléter sans cet article","Signaler au responsable","Chercher seul tout l'entrepôt"],ans:2,exp:"Toute anomalie doit être signalée : l'article peut être mal rangé ou en rupture."},
+  {q:"TMS = ?",opts:["Logiciel de transport","Trouble Musculo-Squelettique","Type de scanner","Méthode de préparation"],ans:1,exp:"Les TMS sont la 1ère cause de maladies professionnelles en entrepôt."},
+  {q:"Taux d'erreur de picking idéal : inférieur à :",opts:["10 %","5 %","0,5 %","20 %"],ans:2,exp:"Un bon entrepôt vise moins de 0,5 % d'erreur sur les lignes préparées."},
+  {q:"Lors d'une préparation vocale, 'check' signifie :",opts:["Annuler la tâche","Confirmer le chiffre de contrôle","Passer à la suivante","Appeler le responsable"],ans:1,exp:"Le 'check' confirme que le préparateur est au bon emplacement."},
+  {q:"Co-packing = ?",opts:["Emballer pour expédition directe","Assembler plusieurs produits ensemble","Contrôler à l'arrivée","Trier par DLC"],ans:1,exp:"Co-packing = regrouper et conditionner plusieurs références en un seul pack."},
+  {q:"Que signifie DLC sur un produit alimentaire ?",opts:["Date Limite de Commande","Date Limite de Consommation","Délai Logistique de Commande","Document Logistique de Contrôle"],ans:1,exp:"DLC = Date Limite de Consommation. Passée cette date, le produit ne doit plus être vendu."},
+  {q:"Un transpalette manuel, c'est :",opts:["Un chariot électrique","Un engin à traction manuelle pour déplacer des palettes","Un convoyeur automatique","Un engin de levage aérien"],ans:1,exp:"Le transpalette manuel se pousse/tire à la force humaine. Pas besoin de CACES pour l'utiliser."},
+  {q:"Le picking signifie :",opts:["Ranger les marchandises","Prélever des articles pour constituer une commande","Contrôler les palettes entrantes","Emballer les colis"],ans:1,exp:"Picking = prélèvement. Le préparateur va chercher chaque article dans les rayons."},
+  {q:"Un EPI c'est :",opts:["Un espace de préparation interne","Un équipement de protection individuelle","Un emplacement principal d'inventaire","Un outil de pointage informatique"],ans:1,exp:"EPI = Équipement de Protection Individuelle : casque, chaussures de sécurité, gants..."},
+  {q:"La FIFO signifie :",opts:["First In First Out","First Inventory For Output","Fast Identification For Order","Full Inventory First Out"],ans:0,exp:"FIFO = Premier entré, premier sorti. Les produits les plus anciens partent en premier."},
+];
+
+function initQuiz(container) {
+  const questions = shuffle([...QUIZ_BANK]).slice(0,10);
+  let qi=0, score=0, timer=null, timeLeft=20;
+
+  function render() {
+    if(qi>=questions.length){stopTimer();showResult(container,score,questions.length*10,'Quiz terminé !',`${score/10} bonnes réponses sur ${questions.length}.`);return;}
+    const q=questions[qi];
+    const pct=(qi/questions.length)*100;
+    container.innerHTML=`
+      <div class="game-header"><h2>🧠 Quiz Chrono</h2>
+        <div class="hud">
+          <div class="hud-box accent"><div class="v" id="q-score">${score}</div><div class="l">Pts</div></div>
+          <div class="hud-box yellow"><div class="v" id="q-timer">${timeLeft}</div><div class="l">Sec</div></div>
+          <div class="hud-box"><div class="v">${qi+1}/${questions.length}</div><div class="l">Q.</div></div>
+        </div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="quiz-q"><div class="num">Question ${qi+1}</div><div class="text">${q.q}</div></div>
+      <div class="quiz-opts">${q.opts.map((o,i)=>`<button class="quiz-opt" onclick="answerQuiz(${i})">${o}</button>`).join('')}</div>
+      <div class="quiz-feedback" id="q-feedback"></div>
+      <button class="btn-next" id="q-next" onclick="nextQuiz()">Question suivante →</button>`;
+    startTimer();
+  }
+
+  function startTimer(){timeLeft=20;if(timer)clearInterval(timer);timer=setInterval(()=>{timeLeft--;const el=document.getElementById('q-timer');if(el)el.textContent=timeLeft;if(timeLeft<=0){clearInterval(timer);answerQuiz(-1);}},1000);}
+  function stopTimer(){if(timer)clearInterval(timer);}
+
+  window.answerQuiz=(idx)=>{
+    stopTimer();const q=questions[qi];
+    document.querySelectorAll('.quiz-opt').forEach(o=>o.classList.add('disabled'));
+    const fb=document.getElementById('q-feedback'),next=document.getElementById('q-next');
+    if(idx===q.ans){document.querySelectorAll('.quiz-opt')[idx].classList.add('correct');score+=10;document.getElementById('q-score').textContent=score;fb.textContent='✅ Correct ! '+q.exp;fb.className='quiz-feedback ok';fb.style.display='block';}
+    else{if(idx>=0)document.querySelectorAll('.quiz-opt')[idx].classList.add('wrong');document.querySelectorAll('.quiz-opt')[q.ans].classList.add('correct');fb.textContent='❌ '+q.exp;fb.className='quiz-feedback err';fb.style.display='block';}
+    if(next)next.style.display='inline-block';
+  };
+  window.nextQuiz=()=>{qi++;render();};
+  render();
+}
+
+// ══════════════════════════════════════════════════
+// GAME 2 — TRI DES RETOURS
+// ══════════════════════════════════════════════════
+const TRI_BANK = [
+  {id:'i1',label:'📦 Boîte intacte, emballage parfait, DLC OK',zone:'stock'},
+  {id:'i2',label:'🔨 Produit électronique cassé, inutilisable',zone:'rebut'},
+  {id:'i3',label:'📦 Emballage déchiré mais produit intact',zone:'sav'},
+  {id:'i4',label:'🥫 Conserve non ouverte, DLC valide',zone:'stock'},
+  {id:'i5',label:'🧴 Flacon entamé, retour client',zone:'rebut'},
+  {id:'i6',label:'📱 Téléphone fonctionnel, boîte abîmée',zone:'sav'},
+  {id:'i7',label:'🍞 Produit alimentaire date dépassée',zone:'rebut'},
+  {id:'i8',label:'🔧 Outil en parfait état, emballage intact',zone:'stock'},
+  {id:'i9',label:'🧃 Jus de fruit non ouvert, DLC dans 2 semaines',zone:'stock'},
+  {id:'i10',label:'💊 Médicament avec boîte froissée mais scellé',zone:'sav'},
+  {id:'i11',label:'🍶 Bouteille fêlée, risque de fuite',zone:'rebut'},
+  {id:'i12',label:'🔌 Câble électrique en parfait état, emballage neuf',zone:'stock'},
+];
+
+function initTri(container) {
+  const items = shuffle([...TRI_BANK]).slice(0,8);
+  let dropped={}, selectedId=null;
+
+  function render(){
+    const remaining=items.filter(i=>!dropped[i.id]).length;
+    container.innerHTML=`
+      <div class="game-header"><h2>📦 Trie les retours</h2>
+        <div class="hud">
+          <div class="hud-box accent"><div class="v">${Object.keys(dropped).length}</div><div class="l">Triés</div></div>
+          <div class="hud-box"><div class="v">${remaining}</div><div class="l">Restants</div></div>
+        </div>
+      </div>
+      <p style="color:var(--muted);font-size:.82rem;margin-bottom:10px;"><strong style="color:var(--accent)">1.</strong> Appuie sur un article → <strong style="color:var(--accent)">2.</strong> Appuie sur la bonne zone.</p>
+      <div class="tri-items-pool">
+        ${items.filter(it=>!dropped[it.id]).map(it=>`
+          <div class="tri-item${selectedId===it.id?' tri-selected':''}" onclick="triSelect('${it.id}')">${it.label}</div>`).join('')}
+        ${remaining===0?'<p style="color:var(--muted);font-size:.82rem;">Tous les articles ont été triés !</p>':''}
+      </div>
+      ${selectedId?`<p style="color:var(--yellow);font-size:.8rem;text-align:center;margin-bottom:10px;">✋ Sélectionné : <strong>${items.find(i=>i.id===selectedId).label}</strong><br>👇 Choisis une zone</p>`:''}
+      <div class="tri-zone-wrapper">
+        <div class="tri-zone zone-stock${selectedId?' tri-zone-active':''}" onclick="triPlace('stock')">
+          <div class="tri-zone-header"><div class="zone-icon">✅</div><h4>Remise en stock</h4></div>
+          <div>${items.filter(it=>dropped[it.id]==='stock').map(it=>`<div class="dropped-item" data-id="${it.id}">${it.label}</div>`).join('')}</div>
+        </div>
+        <div class="tri-zone zone-sav${selectedId?' tri-zone-active':''}" onclick="triPlace('sav')">
+          <div class="tri-zone-header"><div class="zone-icon">🔧</div><h4>SAV / Reconditionn.</h4></div>
+          <div>${items.filter(it=>dropped[it.id]==='sav').map(it=>`<div class="dropped-item" data-id="${it.id}">${it.label}</div>`).join('')}</div>
+        </div>
+        <div class="tri-zone zone-rebut${selectedId?' tri-zone-active':''}" onclick="triPlace('rebut')">
+          <div class="tri-zone-header"><div class="zone-icon">🗑️</div><h4>Rebut / Destruction</h4></div>
+          <div>${items.filter(it=>dropped[it.id]==='rebut').map(it=>`<div class="dropped-item" data-id="${it.id}">${it.label}</div>`).join('')}</div>
+        </div>
+      </div>
+      ${remaining===0?`<button class="btn-next" style="display:inline-block;margin-top:12px;" onclick="validerTri()">Valider le tri ✓</button>`:''}`;
+  }
+
+  window.triSelect=(id)=>{selectedId=(selectedId===id)?null:id;render();};
+  window.triPlace=(zone)=>{if(!selectedId)return;dropped[selectedId]=zone;selectedId=null;render();};
+  window.validerTri=()=>{
+    let pts=0;
+    items.forEach(item=>{
+      const el=document.querySelector(`[data-id="${item.id}"]`);if(!el)return;
+      const names={stock:'Remise en stock',sav:'SAV',rebut:'Rebut'};
+      if(dropped[item.id]===item.zone){el.classList.add('ok');el.textContent='✅ '+item.label;pts+=10;}
+      else{el.classList.add('err');el.textContent='❌ '+item.label+` → ${names[item.zone]}`;}
+    });
+    document.querySelector('.btn-next') && (document.querySelector('.btn-next').style.display='none');
+    setTimeout(()=>showResult(container,pts,items.length*10,'Tri terminé !',`${pts/10} articles corrects sur ${items.length}.`),1400);
+  };
+  render();
+}
+
+// ══════════════════════════════════════════════════
+// GAME 3 — TROUVE L'ERREUR
+// ══════════════════════════════════════════════════
+const ERROR_BANK = [
+  {title:"Commande #2847 — SARL Durand",rows:[
+    {ref:'A1001',desc:'Café moulu 250g',cmd:6,prep:6,error:false},
+    {ref:'B2034',desc:'Sucre blanc 1kg',cmd:4,prep:4,error:false},
+    {ref:'C3311',desc:'Thé noir boîte 50',cmd:2,prep:3,error:true,tip:'Quantité incorrecte : 3 préparés au lieu de 2'},
+    {ref:'D4500',desc:'Eau minérale 1,5L x6',cmd:10,prep:10,error:false},
+    {ref:'E5012',desc:"Jus d'orange 1L",cmd:5,prep:5,error:false},
+  ]},
+  {title:"Commande #3190 — Resto Le Moulin",rows:[
+    {ref:'F1100',desc:"Huile d'olive 5L",cmd:3,prep:3,error:false},
+    {ref:'G2210',desc:'Farine T55 25kg',cmd:2,prep:2,error:false},
+    {ref:'H3301',desc:'Sel fin 1kg',cmd:8,prep:8,error:false},
+    {ref:'I4420',desc:'Poivre noir moulu',cmd:4,prep:6,error:true,tip:'Quantité incorrecte : 6 préparés, 4 commandés'},
+    {ref:'I4421',desc:'Paprika doux 500g',cmd:2,prep:2,error:false},
+  ]},
+  {title:"Commande #4455 — Hypermarché Est",rows:[
+    {ref:'J1010',desc:'Yaourt nature x12',cmd:20,prep:20,error:false},
+    {ref:'K2020',desc:'Fromage râpé 1kg',cmd:15,prep:15,error:false},
+    {ref:'L3030',desc:'Beurre 250g',cmd:30,prep:30,error:false},
+    {ref:'M4040',desc:'Crème fraîche 20cl',cmd:25,prep:15,error:true,tip:'Quantité insuffisante : 15 préparés au lieu de 25'},
+    {ref:'N5050',desc:'Lait demi-écrémé 1L',cmd:40,prep:40,error:false},
+  ]},
+  {title:"Commande #5012 — Pharmacie Centrale",rows:[
+    {ref:'P1001',desc:'Gel hydroalcoolique 500ml',cmd:10,prep:10,error:false},
+    {ref:'P1002',desc:'Masques chirurgicaux x50',cmd:5,prep:5,error:false},
+    {ref:'P1003',desc:'Gants latex taille M x100',cmd:3,prep:3,error:false},
+    {ref:'P1004',desc:'Compresses stériles 10x10',cmd:8,prep:12,error:true,tip:'Quantité trop élevée : 12 préparés au lieu de 8'},
+    {ref:'P1005',desc:'Sparadraps 2,5cm x5m',cmd:6,prep:6,error:false},
+  ]},
+  {title:"Commande #6230 — Cantine Scolaire",rows:[
+    {ref:'C0010',desc:'Riz long grain 5kg',cmd:4,prep:4,error:false},
+    {ref:'C0011',desc:'Pâtes penne 500g',cmd:20,prep:20,error:false},
+    {ref:'C0012',desc:'Tomates concassées 800g',cmd:15,prep:15,error:false},
+    {ref:'C0013',desc:'Huile de tournesol 5L',cmd:6,prep:6,error:false},
+    {ref:'C0014',desc:'Sauce tomate 1L',cmd:10,prep:7,error:true,tip:'Quantité insuffisante : 7 préparés au lieu de 10'},
+  ]},
+];
+
+function initError(container){
+  const rounds=shuffle([...ERROR_BANK]).slice(0,3);
+  let round=0,score=0,found=false;
+  function renderRound(){
+    if(round>=rounds.length){showResult(container,score,rounds.length*20,'Contrôle terminé !',`${score/20} erreurs détectées sur ${rounds.length}.`);return;}
+    found=false;const r=rounds[round];
+    container.innerHTML=`
+      <div class="game-header"><h2>🔍 Trouve l'erreur</h2>
+        <div class="hud">
+          <div class="hud-box accent"><div class="v">${score}</div><div class="l">Pts</div></div>
+          <div class="hud-box"><div class="v">${round+1}/${rounds.length}</div><div class="l">Cmde</div></div>
+        </div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:.82rem;color:var(--muted);">
+        📋 ${r.title}
+      </div>
+      <p style="color:var(--muted);font-size:.82rem;margin-bottom:10px;">Appuie sur la ligne qui contient une erreur de quantité.</p>
+      <div class="error-cards" id="error-cards">
+        ${r.rows.map((row,i)=>`
+          <div class="error-card" id="row-${i}" onclick="selectRow(${i})">
+            <div class="ec-ref">${row.ref}</div>
+            <div class="ec-name">${row.desc}</div>
+            <div class="ec-qty">
+              <span>Commandé : <strong>${row.cmd}</strong></span>
+              <span>Préparé : <strong>${row.prep}</strong></span>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="quiz-feedback" id="err-fb"></div>
+      <button class="btn-next" id="err-next" style="display:none" onclick="nextRound()">Commande suivante →</button>`;
+    window.selectRow=(idx)=>{
+      if(found)return;found=true;const row=r.rows[idx];
+      document.querySelectorAll('.error-card').forEach(c=>c.onclick=null);
+      const fb=document.getElementById('err-fb'),next=document.getElementById('err-next');
+      if(row.error){document.getElementById('row-'+idx).classList.add('selected-ok');score+=20;fb.textContent='✅ Bien vu ! '+row.tip;fb.className='quiz-feedback ok';fb.style.display='block';}
+      else{document.getElementById('row-'+idx).classList.add('selected-err');const ei=r.rows.findIndex(rw=>rw.error);if(ei>=0)document.getElementById('row-'+ei).classList.add('selected-ok');fb.textContent='❌ Raté ! '+r.rows.find(rw=>rw.error).tip;fb.className='quiz-feedback err';fb.style.display='block';}
+      next.style.display='inline-block';
+    };
+    window.nextRound=()=>{round++;renderRound();};
+  }
+  renderRound();
+}
+
+// ══════════════════════════════════════════════════
+// GAME 4 — MEMORY CACES
+// ══════════════════════════════════════════════════
+const MEM_BANK = [
+  {a:{icon:'🏗️',label:'Chariot élévateur contrebalancé'},b:{icon:'📋',label:'CACES R489 Cat. 3'}},
+  {a:{icon:'🔼',label:'Gerbeur conducteur accompagnant'},b:{icon:'📋',label:'CACES R485 Cat. 1'}},
+  {a:{icon:'🛒',label:'Transpalette électrique porté'},b:{icon:'📋',label:'CACES R489 Cat. 1'}},
+  {a:{icon:'🏗️',label:'Chariot à mât rétractable'},b:{icon:'📋',label:'CACES R489 Cat. 5'}},
+  {a:{icon:'🔼',label:'Préparateur grande hauteur'},b:{icon:'📋',label:'CACES R489 Cat. 2'}},
+  {a:{icon:'🦺',label:'Nacelle élévatrice (PEMP)'},b:{icon:'📋',label:'CACES R486'}},
+  {a:{icon:'🚜',label:'Chariot latéral'},b:{icon:'📋',label:'CACES R489 Cat. 4'}},
+  {a:{icon:'🚛',label:'Pont roulant / portique'},b:{icon:'📋',label:'CACES R484'}},
+];
+
+function initMemory(container){
+  const pairs=shuffle([...MEM_BANK]).slice(0,6);
+  let flipped=[],matched=0,moves=0,locked=false;
+  let cards=[];
+  pairs.forEach((pair,pi)=>{
+    cards.push({id:'a'+pi,pairId:pi,side:'a',icon:pair.a.icon,label:pair.a.label});
+    cards.push({id:'b'+pi,pairId:pi,side:'b',icon:pair.b.icon,label:pair.b.label});
+  });
+  for(let i=cards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cards[i],cards[j]]=[cards[j],cards[i]];}
+
+  function render(){
+    container.innerHTML=`
+      <div class="game-header"><h2>🃏 Memory CACES</h2>
+        <div class="hud">
+          <div class="hud-box green"><div class="v" id="mem-matched">${matched}</div><div class="l">Paires</div></div>
+          <div class="hud-box"><div class="v" id="mem-moves">${moves}</div><div class="l">Essais</div></div>
+        </div>
+      </div>
+      <p style="color:var(--muted);font-size:.82rem;margin-bottom:10px;">Retrouve les paires engin ↔ CACES.</p>
+      <div class="memory-grid" style="grid-template-columns:repeat(4,1fr);">
+        ${cards.map(c=>`<div class="mem-card" id="mc-${c.id}" onclick="flipMem('${c.id}')"><div class="back">❓</div><div class="front"><span style="font-size:1.2rem">${c.icon}</span><span>${c.label}</span></div></div>`).join('')}
+      </div>`;
+  }
+
+  window.flipMem=(id)=>{
+    if(locked)return;const card=cards.find(c=>c.id===id);if(!card)return;
+    const el=document.getElementById('mc-'+id);
+    if(!el||el.classList.contains('matched')||el.classList.contains('flipped'))return;
+    el.classList.add('flipped');flipped.push(card);
+    if(flipped.length===2){
+      moves++;document.getElementById('mem-moves').textContent=moves;locked=true;
+      const[c1,c2]=flipped;
+      if(c1.pairId===c2.pairId&&c1.side!==c2.side){
+        setTimeout(()=>{
+          document.getElementById('mc-'+c1.id).classList.add('matched');
+          document.getElementById('mc-'+c2.id).classList.add('matched');
+          matched++;document.getElementById('mem-matched').textContent=matched;
+          flipped=[];locked=false;
+          if(matched===pairs.length){const pts=Math.max(120-moves*5,20);setTimeout(()=>showResult(container,pts,120,'Memory réussi !',`${pairs.length} paires en ${moves} essais.`),500);}
+        },500);
+      }else{
+        setTimeout(()=>{document.getElementById('mc-'+c1.id).classList.remove('flipped');document.getElementById('mc-'+c2.id).classList.remove('flipped');flipped=[];locked=false;},900);
+      }
+    }
+  };
+  render();
+}
+
+// ══════════════════════════════════════════════════
+// GAME 5 — LE DRIVE EN FOLIE
+// ══════════════════════════════════════════════════
+const DRIVE_BANK = [
+  {car:'🚗',client:'Mme Dupont',item:'Lait demi-écrémé 1L x6',choices:['Lait demi-écrémé 1L x6','Lait entier 1L x6','Lait demi-écrémé 0,5L x6','Lait écrémé 1L x6'],correct:0},
+  {car:'🚙',client:'M. Martin',item:'Pain de mie complet 500g',choices:['Pain de mie blanc 400g','Pain de mie complet 500g','Pain de mie brioche 400g','Pain complet 750g'],correct:1},
+  {car:'🚕',client:'Famille Leroux',item:'Yaourt fraise x8 Délice',choices:['Yaourt nature x8 Délice','Yaourt fraise x4 Délice','Yaourt fraise x8 Délice','Yaourt fraise x8 Fresco'],correct:2},
+  {car:'🚐',client:'M. Benali',item:'Dentifrice blancheur 75ml x2',choices:['Dentifrice menthe 75ml x2','Dentifrice blancheur 50ml x2','Dentifrice blancheur 75ml','Dentifrice blancheur 75ml x2'],correct:3},
+  {car:'🏎️',client:'Mme Petit',item:'Coca-Cola zéro 1,5L x6',choices:['Coca-Cola normal 1,5L x6','Coca-Cola zéro 33cl x6','Coca-Cola zéro 1,5L x4','Coca-Cola zéro 1,5L x6'],correct:3},
+  {car:'🚗',client:'M. Girard',item:'Pâtes penne 500g Baroni',choices:['Pâtes fusilli 500g Baroni','Pâtes penne 500g Pasta','Pâtes penne 250g Baroni','Pâtes penne 500g Baroni'],correct:3},
+  {car:'🚙',client:'Mme Roux',item:'Shampooing cheveux secs 250ml',choices:['Shampooing cheveux gras 250ml','Shampooing cheveux secs 250ml','Shampooing cheveux secs 400ml','Après-shampoing 250ml'],correct:1},
+  {car:'🚕',client:'M. Lambert',item:'Café capsules x36 Intenso',choices:['Café capsules x36 Lungo','Café capsules x16 Intenso','Café capsules x36 Intenso','Café moulu 250g Intenso'],correct:2},
+];
+
+function initDrive(container){
+  const orders=shuffle([...DRIVE_BANK]).slice(0,6);
+  let qi=0,score=0,timerInterval=null;
+  function renderQ(){
+    if(qi>=orders.length){if(timerInterval)clearInterval(timerInterval);showResult(container,score,orders.length*15,'Service terminé !',`${score/15} bonne(s) commande(s) sur ${orders.length}.`);return;}
+    const o=orders[qi];let timeLeft=8;
+    container.innerHTML=`
+      <div class="game-header"><h2>🚗 Le Drive en folie</h2>
+        <div class="hud">
+          <div class="hud-box accent"><div class="v" id="dr-score">${score}</div><div class="l">Pts</div></div>
+          <div class="hud-box yellow"><div class="v" id="dr-timer">8</div><div class="l">Sec</div></div>
+          <div class="hud-box"><div class="v">${qi+1}/${orders.length}</div><div class="l">Client</div></div>
+        </div>
+      </div>
+      <div class="drive-order"><span class="car">${o.car}</span><div class="order-desc"><strong>${o.client}</strong><span>Commande : ${o.item}</span></div></div>
+      <div class="timer-bar"><div class="timer-fill" id="dr-tbar" style="width:100%;background:var(--green)"></div></div>
+      <p style="color:var(--muted);font-size:.8rem;margin-bottom:8px;">Quelle est la bonne référence ?</p>
+      <div class="drive-btns">${o.choices.map((ch,i)=>`<button class="drive-btn" id="dr-btn-${i}" onclick="drAnswer(${i})">${ch}</button>`).join('')}</div>
+      <div class="quiz-feedback" id="dr-fb"></div>
+      <button class="btn-next" id="dr-next" style="display:none" onclick="drNext()">Client suivant →</button>`;
+    if(timerInterval)clearInterval(timerInterval);
+    timerInterval=setInterval(()=>{
+      timeLeft--;
+      const el=document.getElementById('dr-timer'),bar=document.getElementById('dr-tbar');
+      if(el)el.textContent=timeLeft;
+      if(bar){bar.style.width=(timeLeft/8*100)+'%';bar.style.background=timeLeft<=3?'var(--red)':timeLeft<=5?'var(--yellow)':'var(--green)';}
+      if(timeLeft<=0){clearInterval(timerInterval);drAnswer(-1);}
+    },1000);
+    window.drAnswer=(idx)=>{
+      clearInterval(timerInterval);document.querySelectorAll('.drive-btn').forEach(b=>b.onclick=null);
+      const fb=document.getElementById('dr-fb'),next=document.getElementById('dr-next');
+      if(idx===o.correct){document.getElementById('dr-btn-'+idx).classList.add('correct');score+=15;document.getElementById('dr-score').textContent=score;fb.textContent='✅ Parfait !';fb.className='quiz-feedback ok';fb.style.display='block';}
+      else{if(idx>=0)document.getElementById('dr-btn-'+idx).classList.add('wrong');document.getElementById('dr-btn-'+o.correct).classList.add('correct');fb.textContent='❌ Raté ! La bonne réponse : "'+o.choices[o.correct]+'"';fb.className='quiz-feedback err';fb.style.display='block';}
+      if(next)next.style.display='inline-block';
+    };
+    window.drNext=()=>{qi++;renderQ();};
+  }
+  renderQ();
+}
+
+// ══════════════════════════════════════════════════
+// GAME 6 — MONTE LA PALETTE
+// ══════════════════════════════════════════════════
+const PALETTE_BANK = [
+  {
+    title:"Palette de produits alimentaires",
+    items:[
+      {emoji:'🪨',label:'Sacs de sable 25kg',correct:0},
+      {emoji:'🥫',label:'Conserves 1kg x12',correct:1},
+      {emoji:'🧃',label:'Jus de fruit 1L x6',correct:2},
+      {emoji:'🍫',label:'Tablettes chocolat x24',correct:3},
+      {emoji:'🥐',label:'Viennoiseries emballées',correct:4},
+    ],
+    tip:"Règle : plus c'est lourd, plus ça va en bas. Les produits fragiles ou légers restent au sommet."
+  },
+  {
+    title:"Palette matériel de bureau",
+    items:[
+      {emoji:'🖨️',label:'Imprimantes x4 (40kg)',correct:0},
+      {emoji:'📦',label:'Ramettes de papier x20',correct:1},
+      {emoji:'💻',label:'Ordinateurs portables x6',correct:2},
+      {emoji:'🖱️',label:'Claviers et souris x20',correct:3},
+      {emoji:'📎',label:'Fournitures légères',correct:4},
+    ],
+    tip:"Matériel lourd en bas, matériel fragile et léger en haut. Les écrans ne doivent jamais être écrasés."
+  },
+  {
+    title:"Palette produits ménagers",
+    items:[
+      {emoji:'🧹',label:'Seau + serpillière x10 (15kg)',correct:0},
+      {emoji:'🧴',label:'Bidons lessive 5L x4',correct:1},
+      {emoji:'🫧',label:'Bouteilles liquide vaisselle',correct:2},
+      {emoji:'🧻',label:'Rouleaux essuie-tout x12',correct:3},
+      {emoji:'🪥',label:'Brosses à dents x50',correct:4},
+    ],
+    tip:"Les bidons lourds en bas, les produits légers et fragiles au sommet. Ne jamais mettre un produit lourd sur un léger."
+  },
+];
+
+function initPalette(container){
+  const scenario=PALETTE_BANK[Math.floor(Math.random()*PALETTE_BANK.length)];
+  const items=[...scenario.items];
+  const shuffled=shuffle([...items]);
+  let slots=Array(items.length).fill(null);
+  let selectedItem=null;
+
+  function render(){
+    const remaining=shuffled.filter(it=>!slots.includes(it)).length;
+    const allPlaced=remaining===0;
+    container.innerHTML=`
+      <div class="game-header"><h2>🏗️ Monte la palette</h2>
+        <div class="hud">
+          <div class="hud-box accent"><div class="v">${items.length-remaining}</div><div class="l">Placés</div></div>
+          <div class="hud-box"><div class="v">${remaining}</div><div class="l">Restants</div></div>
+        </div>
+      </div>
+      <p style="color:var(--muted);font-size:.82rem;margin-bottom:4px;"><strong>${scenario.title}</strong></p>
+      <p style="color:var(--muted);font-size:.78rem;margin-bottom:12px;"><strong style="color:var(--accent)">1.</strong> Sélectionne un article → <strong style="color:var(--accent)">2.</strong> Clique sur la couche de la palette (couche 1 = bas).</p>
+      <div class="palette-pool">
+        ${shuffled.map(it=>{
+          const placed=slots.includes(it);
+          return`<div class="palette-item${selectedItem===it?' pal-selected':''}${placed?' pal-placed':''}" onclick="${placed?'':'palSelect(\''+it.emoji+it.label+'\')'}">${it.emoji} ${it.label}</div>`;
+        }).join('')}
+      </div>
+      ${selectedItem?`<p style="color:var(--yellow);font-size:.8rem;margin-bottom:8px;text-align:center;">✋ Sélectionné : <strong>${selectedItem.emoji} ${selectedItem.label}</strong> — choisis une couche ↓</p>`:''}
+      <div class="palette-slots">
+        ${slots.map((s,i)=>`
+          <div class="palette-slot" onclick="palPlace(${i})">
+            <span class="slot-num">Couche ${i+1}</span>
+            ${s?`<span>${s.emoji} ${s.label}</span>`:`<span class="slot-placeholder">— libre —</span>`}
+          </div>`).join('')}
+      </div>
+      ${allPlaced?`<button class="btn-next" style="display:inline-block;margin-top:8px;" onclick="validerPalette()">Valider la palette ✓</button>`:''}`;
+
+    // bind select by emoji+label key since items may not be unique objects
+    window.palSelect=(key)=>{
+      const it=shuffled.find(i=>i.emoji+i.label===key&&!slots.includes(i));
+      if(!it)return;
+      selectedItem=(selectedItem===it)?null:it;render();
+    };
+    window.palPlace=(idx)=>{
+      if(!selectedItem)return;
+      if(slots[idx]!==null){// swap back to pool
+        const old=slots[idx];slots[idx]=null;
+      }
+      slots[idx]=selectedItem;selectedItem=null;render();
+    };
+  }
+
+  window.validerPalette=()=>{
+    let pts=0;
+    slots.forEach((item,i)=>{
+      if(!item)return;
+      const slotEl=document.querySelectorAll('.palette-slot')[i];
+      if(item.correct===i){slotEl.classList.add('filled-ok');pts+=10;}
+      else{slotEl.classList.add('filled-err');}
+    });
+    document.querySelector('.btn-next')&&(document.querySelector('.btn-next').style.display='none');
+    const tipEl=document.createElement('p');tipEl.style.cssText='color:var(--muted);font-size:.82rem;margin-top:10px;padding:10px;background:var(--card);border-radius:8px;';tipEl.textContent='💡 '+scenario.tip;
+    document.getElementById('game-content').appendChild(tipEl);
+    setTimeout(()=>showResult(container,pts,items.length*10,'Palette vérifiée !',`${pts/10} articles au bon niveau sur ${items.length}.`),1800);
+  };
+
+  render();
+}
+
+// ══════════════════════════════════════════════════
+// GAME 7 — VRAI OU FAUX CHRONO
+// ══════════════════════════════════════════════════
+const VF_BANK = [
+  {q:"Un transpalette manuel nécessite un CACES pour être utilisé.",rep:false,exp:"Faux. Le transpalette manuel ne nécessite pas de CACES. Seuls les engins motorisés l'exigent."},
+  {q:"La méthode FIFO signifie que les produits les plus récents partent en premier.",rep:false,exp:"Faux. FIFO = Premier entré, premier sorti. Ce sont les plus anciens qui partent en premier."},
+  {q:"Un litige peut être causé par une erreur de quantité.",rep:true,exp:"Vrai. Un litige peut survenir pour toute erreur : mauvaise référence, quantité, emballage..."},
+  {q:"Le taux d'erreur idéal en picking est inférieur à 0,5 %.",rep:true,exp:"Vrai. Un bon entrepôt vise moins de 0,5 % d'erreur sur l'ensemble des lignes préparées."},
+  {q:"On peut remettre en stock un produit retourné sans contrôle si l'emballage est intact.",rep:false,exp:"Faux. Tout retour doit être contrôlé avant remise en stock, même si l'emballage semble intact."},
+  {q:"Les TMS sont la première cause de maladies professionnelles en entrepôt.",rep:true,exp:"Vrai. Troubles Musculo-Squelettiques = dos, poignets, épaules, genoux. Très fréquents en logistique."},
+  {q:"WMS signifie Worker Management System.",rep:false,exp:"Faux. WMS = Warehouse Management System : système de gestion d'entrepôt."},
+  {q:"Un bon de retour est obligatoire pour réceptionner une marchandise retournée.",rep:true,exp:"Vrai. Le bon de retour permet de tracer le mouvement et de mettre à jour le stock."},
+  {q:"Le CACES R486 concerne les chariots élévateurs de type 3.",rep:false,exp:"Faux. R486 concerne les nacelles élévatrices (PEMP). Le R489 concerne les chariots automoteurs."},
+  {q:"La zone A dans la méthode ABC regroupe les produits à forte rotation.",rep:true,exp:"Vrai. A = produits très demandés, placés près des zones d'expédition pour limiter les déplacements."},
+  {q:"Un préparateur peut prendre un article similaire si la bonne référence est introuvable.",rep:false,exp:"Faux. Il doit signaler l'anomalie au responsable. Prendre un article similaire créerait un litige."},
+  {q:"Le co-packing consiste à assembler plusieurs produits en un seul conditionnement.",rep:true,exp:"Vrai. Co-packing = regrouper et conditionner plusieurs références en un seul pack prêt à vendre."},
+  {q:"La DLC et la DDM sont exactement la même chose.",rep:false,exp:"Faux. DLC = Date Limite de Consommation (produits frais). DDM = Date de Durabilité Minimale (longue conservation)."},
+  {q:"Le REX sert à désigner et sanctionner le responsable d'une erreur.",rep:false,exp:"Faux. Le REX (Retour d'Expérience) sert à analyser les causes et améliorer les processus, pas à sanctionner."},
+  {q:"La limite légale de port de charge manuel est de 25 kg pour un adulte.",rep:true,exp:"Vrai. Selon l'INRS, 25 kg est la limite recommandée. Au-delà, une aide mécanique est nécessaire."},
+];
+
+function initChrono(container){
+  const questions=shuffle([...VF_BANK]).slice(0,10);
+  let qi=0,score=0,timer=null,timeLeft=5;
+
+  function render(){
+    if(qi>=questions.length){if(timer)clearInterval(timer);showResult(container,score,questions.length*10,'Vrai/Faux terminé !',`${score/10} bonnes réponses sur ${questions.length}.`);return;}
+    const q=questions[qi];timeLeft=5;
+    container.innerHTML=`
+      <div class="game-header"><h2>⚡ Vrai ou Faux Chrono</h2>
+        <div class="hud">
+          <div class="hud-box accent"><div class="v" id="vf-score">${score}</div><div class="l">Pts</div></div>
+          <div class="hud-box yellow"><div class="v" id="vf-timer">5</div><div class="l">Sec</div></div>
+          <div class="hud-box"><div class="v">${qi+1}/${questions.length}</div><div class="l">Q.</div></div>
+        </div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${(qi/questions.length)*100}%"></div></div>
+      <div class="chrono-item">
+        <div style="font-size:.72rem;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Affirmation ${qi+1}</div>
+        <div style="font-size:1rem;font-weight:600;line-height:1.5;">${q.q}</div>
+      </div>
+      <div class="chrono-choices">
+        <button class="chrono-choice" id="btn-vrai" onclick="answerVF(true)">✅ VRAI</button>
+        <button class="chrono-choice" id="btn-faux" onclick="answerVF(false)">❌ FAUX</button>
+      </div>
+      <div class="quiz-feedback" id="vf-fb"></div>
+      <button class="btn-next" id="vf-next" style="display:none" onclick="nextVF()">Suivant →</button>`;
+    if(timer)clearInterval(timer);
+    timer=setInterval(()=>{timeLeft--;const el=document.getElementById('vf-timer');if(el)el.textContent=timeLeft;if(timeLeft<=0){clearInterval(timer);answerVF(null);}},1000);
+    window.answerVF=(val)=>{
+      clearInterval(timer);
+      document.getElementById('btn-vrai').classList.add('disabled');document.getElementById('btn-faux').classList.add('disabled');
+      const fb=document.getElementById('vf-fb'),next=document.getElementById('vf-next');
+      if(val===q.rep){document.getElementById(val?'btn-vrai':'btn-faux').classList.add('correct');score+=10;document.getElementById('vf-score').textContent=score;fb.textContent='✅ '+q.exp;fb.className='quiz-feedback ok';fb.style.display='block';}
+      else{if(val!==null)document.getElementById(val?'btn-vrai':'btn-faux').classList.add('wrong');document.getElementById(q.rep?'btn-vrai':'btn-faux').classList.add('correct');fb.textContent='❌ '+q.exp;fb.className='quiz-feedback err';fb.style.display='block';}
+      next.style.display='inline-block';
+    };
+    window.nextVF=()=>{qi++;render();};
+  }
+  render();
+}
+
+// ══════════════════════════════════════════════════
+// GAME 8 — LE MOT DU DEPOT (PENDU)
+// ══════════════════════════════════════════════════
+const PENDU_BANK = [
+  {word:'PICKING',hint:'Action de prélever des articles pour constituer une commande'},
+  {word:'PALETTE',hint:'Support plat en bois ou plastique pour stocker et transporter des marchandises'},
+  {word:'CACES',hint:'Certificat d\'aptitude à la conduite d\'engins en sécurité'},
+  {word:'LITIGE',hint:'Désaccord entre ce qui a été commandé et ce qui a été reçu'},
+  {word:'SCANNER',hint:'Outil utilisé pour lire les codes-barres des articles'},
+  {word:'KITTING',hint:'Assemblage de plusieurs composants en un seul ensemble'},
+  {word:'GERBEUR',hint:'Engin électrique pour élever des charges sur des rayonnages'},
+  {word:'COBOTS',hint:'Robots collaboratifs qui travaillent aux côtés des humains'},
+  {word:'RETOUR',hint:'Marchandise renvoyée par le client à l\'entrepôt'},
+  {word:'ZONAGE',hint:'Organisation et délimitation des espaces dans un entrepôt'},
+  {word:'FIFO',hint:'Méthode de gestion : premier entré, premier sorti'},
+  {word:'REBUT',hint:'Produit non récupérable, destiné à la destruction'},
+];
+
+function initPendu(container){
+  const entry=PENDU_BANK[Math.floor(Math.random()*PENDU_BANK.length)];
+  const word=entry.word;
+  let found=new Set();
+  let errors=0;
+  const maxErrors=6;
+
+  function render(){
+    const won=[...word].every(l=>found.has(l));
+    const lost=errors>=maxErrors;
+    const lives=Array(maxErrors).fill(0).map((_,i)=>i<errors?'💀':'❤️').join(' ');
+    const display=[...word].map(l=>`<div class="pendu-letter">${found.has(l)?l:' '}</div>`).join('');
+    const alpha='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    container.innerHTML=`
+      <div class="game-header"><h2>🔤 Le Mot du Dépôt</h2>
+        <div class="hud">
+          <div class="hud-box red"><div class="v">${errors}/${maxErrors}</div><div class="l">Erreurs</div></div>
+          <div class="hud-box green"><div class="v">${[...word].filter(l=>found.has(l)).length}/${word.length}</div><div class="l">Trouvés</div></div>
+        </div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;">
+        <p style="font-size:.75rem;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Indice</p>
+        <p style="font-size:.9rem;color:var(--text);">${entry.hint}</p>
+      </div>
+      <div class="pendu-word">${display}</div>
+      <div class="pendu-errors" style="margin-bottom:14px;">${lives}</div>
+      ${won||lost?'':
+        `<div class="pendu-alpha">${alpha.map(l=>`<button class="pendu-btn${found.has(l)?(word.includes(l)?' used-ok':' used-err'):''}" onclick="penduGuess('${l}')" ${found.has(l)?'disabled':''}>${l}</button>`).join('')}</div>`}
+      ${won?`<div class="quiz-feedback ok" style="display:block;text-align:center;">🎉 Bravo ! Le mot était bien <strong>${word}</strong></div><button class="btn-next" style="display:inline-block;margin-top:10px;" onclick="startGame('pendu')">Nouveau mot</button><button class="btn-menu-r" style="margin-top:10px;margin-left:10px;" onclick="backToMenu()">Menu</button>`:''}
+      ${lost?`<div class="quiz-feedback err" style="display:block;text-align:center;">😢 Perdu ! Le mot était <strong>${word}</strong></div><button class="btn-next" style="display:inline-block;margin-top:10px;" onclick="startGame('pendu')">Réessayer</button><button class="btn-menu-r" style="margin-top:10px;margin-left:10px;" onclick="backToMenu()">Menu</button>`:''}`;
+
+    if(won){const pts=Math.max(60-(errors*8),10);showBestScore(currentGame,pts);addScore(pts);}
+    if(lost){showBestScore(currentGame,0);}
+    window.penduGuess=(l)=>{found.add(l);if(!word.includes(l))errors++;render();};
+  }
+  render();
+}
+
+// ══════════════════════════════════════════════════
+// GAME 9 — BONNE DECISION !
+// ══════════════════════════════════════════════════
+const RAPID_BANK = [
+  {scenario:"Tu trouves un palette instable dans l'allée, prête à tomber.",choices:["Continuer sans s'en occuper","Sécuriser la zone et prévenir le responsable","La pousser vite pour dégager l'allée","Appeler un collègue pour rigoler"],correct:1,exp:"Une palette instable est un danger immédiat. On sécurise la zone et on prévient le responsable."},
+  {scenario:"Tu réalises que tu as préparé 8 articles au lieu de 5 dans une commande.",choices:["Laisser comme ça, ça ne gêne personne","Enlever les articles en trop et remettre à leur place","Expédier quand même puis prévenir après","Jeter les articles en trop"],correct:1,exp:"Il faut corriger immédiatement et remettre les articles en surplus à leur emplacement."},
+  {scenario:"Ton scanner tombe en panne en pleine préparation.",choices:["Continuer la préparation à vue sans scanner","Préparer de mémoire","Arrêter et signaler la panne au responsable","Emprunter le scanner d'un collègue sans le dire"],correct:2,exp:"Sans scanner, risque d'erreur. On arrête et on signale la panne pour avoir un équipement fonctionnel."},
+  {scenario:"Tu vois un collègue soulever seul une charge de 40 kg.",choices:["Ne rien dire, c'est son problème","Lui proposer de l'aide et lui rappeler les règles","Rire et continuer","Prévenir le chef pour qu'il soit puni"],correct:1,exp:"La solidarité et la prévention font partie du travail. On aide et on rappelle les bonnes pratiques."},
+  {scenario:"Tu découvres un produit chimique renversé sur le sol de l'entrepôt.",choices:["Nettoyer rapidement avec un chiffon","Marquer la zone, ne pas toucher et alerter le responsable","Enjamber et continuer","Recouvrir d'une palette"],correct:1,exp:"Produit chimique = danger. On isole la zone, on n'y touche pas et on alerte immédiatement."},
+  {scenario:"Tu ne trouves pas la référence A1234 à son emplacement habituel.",choices:["Prendre la référence A1243 qui ressemble","Laisser la ligne vide et passer à la suite","Signaler l'anomalie au responsable avant de continuer","Chercher seul pendant 1 heure"],correct:2,exp:"Toujours signaler les anomalies. L'article peut être en rupture ou mal rangé."},
+  {scenario:"Un client se plaint directement à toi que sa commande est mauvaise.",choices:["Lui dire que c'est la faute du transporteur","Prendre ses coordonnées et transmettre au service client","Lui proposer un remboursement immédiat","Ignorer la plainte"],correct:1,exp:"Le préparateur n'est pas en contact client direct. On prend les infos et on transmet au service compétent."},
+  {scenario:"Tu as très mal au dos depuis ce matin mais tu dois finir ta tournée.",choices:["Continuer sans rien dire pour ne pas gêner","Prendre des pauses plus fréquentes discrètement","Prévenir ton responsable et consulter la médecine du travail","Prendre des médicaments et accélérer"],correct:2,exp:"La santé passe avant tout. Le responsable et la médecine du travail peuvent adapter le poste."},
+];
+
+function initRapid(container){
+  const questions=shuffle([...RAPID_BANK]).slice(0,6);
+  let qi=0,score=0;
+  function renderQ(){
+    if(qi>=questions.length){showResult(container,score,questions.length*15,'Gestion terminée !',`${score/15} bonne(s) décision(s) sur ${questions.length}.`);return;}
+    const q=questions[qi];
+    container.innerHTML=`
+      <div class="game-header"><h2>⚠️ Bonne décision !</h2>
+        <div class="hud">
+          <div class="hud-box accent"><div class="v">${score}</div><div class="l">Pts</div></div>
+          <div class="hud-box"><div class="v">${qi+1}/${questions.length}</div><div class="l">Scén.</div></div>
+        </div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${(qi/questions.length)*100}%"></div></div>
+      <div class="rapid-item">
+        <div style="font-size:.72rem;color:var(--accent2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Situation ${qi+1}</div>
+        <div class="rapid-scenario">${q.scenario}</div>
+        <div class="rapid-choices">
+          ${q.choices.map((c,i)=>`<button class="rapid-choice" id="rc-${i}" onclick="rapidAnswer(${i})">${c}</button>`).join('')}
+        </div>
+      </div>
+      <div class="quiz-feedback" id="rapid-fb"></div>
+      <button class="btn-next" id="rapid-next" style="display:none" onclick="rapidNext()">Situation suivante →</button>`;
+    window.rapidAnswer=(idx)=>{
+      document.querySelectorAll('.rapid-choice').forEach(b=>b.classList.add('disabled'));
+      const fb=document.getElementById('rapid-fb'),next=document.getElementById('rapid-next');
+      if(idx===q.correct){document.getElementById('rc-'+idx).classList.add('correct');score+=15;fb.textContent='✅ Bonne décision ! '+q.exp;fb.className='quiz-feedback ok';fb.style.display='block';}
+      else{document.getElementById('rc-'+idx).classList.add('wrong');document.getElementById('rc-'+q.correct).classList.add('correct');fb.textContent='❌ Pas la meilleure option. '+q.exp;fb.className='quiz-feedback err';fb.style.display='block';}
+      next.style.display='inline-block';
+    };
+    window.rapidNext=()=>{qi++;renderQ();};
+  }
+  renderQ();
+}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+shuffleMenu();
+</script>
+</body>
+</html>
